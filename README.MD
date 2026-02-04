@@ -1,9 +1,10 @@
 # classroom-backend
 
-<div align="center" style="margin: 30px;">
+<div align="center" style="margin: 30px 0;">
     <a href="https://ibrahim-tablawy-portfolio.vercel.app/">
-    <img alt="Express.js logo" src="https://refine.ams3.cdn.digitaloceanspaces.com/readme/refine-readme-banner.png">
-    <img alt="github logo" src="https://avatars.githubusercontent.com/u/110768301?s=400&u=d419091187e0ac09e080581ea5b3096623df8beb&v=4">
+        <img alt="github logo" src="https://avatars.githubusercontent.com/u/110768301?s=400&u=d419091187e0ac09e080581ea5b3096623df8beb&v=4" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 15px;">
+        <br />
+        <img alt="Express.js logo" src="https://refine.ams3.cdn.digitaloceanspaces.com/readme/refine-readme-banner.png" style="max-width: 100%;">
     </a>
 </div>
 <br/>
