@@ -16,7 +16,7 @@
 
 ## 📖 Overview
 
-This project serves as the backend API for the Classroom Management System. It is designed to be scalable, type-safe, and easy to maintain. It provides a RESTful API to manage core educational entities like **Departments** and **Subjects**, leveraging the power of modern tools like Drizzle ORM for database interactions and TypeScript for code reliability.
+This project serves as the backend API for the Classroom Management System. It is designed to be scalable, type-safe, and secure. It provides a RESTful API to manage core educational entities like **Departments** and **Subjects**, leveraging the power of modern tools like Drizzle ORM for database interactions and TypeScript for code reliability.
 
 ## 🛠️ Tech Stack
 
@@ -72,11 +72,17 @@ npm install
 
 ### 3. Environment Setup
 
-Create a `.env` file in the root directory and add your database connection string and port:
+Create a `.env` file in the root directory and add the following variables:
 
 ```env
+# Database Connection
 DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
+
+# Server Port (Default: 8000)
 PORT=8000
+
+# Frontend URL for CORS (Required for security)
+FRONTEND_URL="http://localhost:5173"
 ```
 
 ### 4. Database Migration
@@ -105,6 +111,11 @@ The server will start at `http://localhost:8000`.
 
 All API routes are prefixed with `/api`.
 
+### 🛡️ Validation Rules
+*   **Pagination:** `limit` is capped at **50**. `page` must be >= 1.
+*   **Strings:** `code` max 50 chars, `name` max 255 chars.
+*   **IDs:** Must be valid integers.
+
 ### 🏫 Departments (`/api/departments`)
 
 | Method | Endpoint | Description | Query Params |
@@ -129,17 +140,17 @@ All API routes are prefixed with `/api`.
 
 ### `departments` Table
 *   `id`: Integer (Primary Key, Auto-increment)
-*   `code`: String (Unique, e.g., "CSE")
-*   `name`: String (e.g., "Computer Science")
-*   `description`: String
+*   `code`: String (Unique, Max 50)
+*   `name`: String (Max 255)
+*   `description`: String (Max 255)
 *   `created_at`: Timestamp
 *   `updated_at`: Timestamp
 
 ### `subjects` Table
 *   `id`: Integer (Primary Key, Auto-increment)
-*   `code`: String (Unique, e.g., "CS101")
-*   `name`: String (e.g., "Intro to Programming")
-*   `description`: String
+*   `code`: String (Unique, Max 50)
+*   `name`: String (Max 255)
+*   `description`: String (Max 255)
 *   `department_id`: Integer (Foreign Key -> departments.id)
 *   `created_at`: Timestamp
 *   `updated_at`: Timestamp

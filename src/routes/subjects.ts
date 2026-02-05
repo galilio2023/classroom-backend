@@ -9,8 +9,19 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { search, department, page = 1, limit = 10 } = req.query;
-    const currentPage = Math.max(1, +page);
-    const limitPerPage = Math.max(1, +limit);
+    
+    // Validate and sanitize pagination parameters
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    
+    // Ensure page is at least 1, default to 1 if invalid
+    const currentPage = isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber;
+    
+    // Ensure limit is at least 1 and at most 50, default to 10 if invalid
+    const limitPerPage = isNaN(limitNumber) || limitNumber < 1 
+      ? 10 
+      : Math.min(limitNumber, 50); // Cap limit at 50
+
     const offset = (currentPage - 1) * limitPerPage;
     const filterConditions = [];
     if (search) {
@@ -96,7 +107,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(subject[0]);
   } catch (error) {
-    console.error(`GET /subjects/:id error:`, error); // Improved logging
+    console.error(`GET /subjects/:id error:`, error);
     res.status(500).json({ error: "Failed to fetch subject", details: String(error) });
   }
 });
@@ -106,9 +117,29 @@ router.post("/", async (req, res) => {
   try {
     const { code, name, description, departmentId } = req.body;
     
-    // Basic validation
+    // Validation
     if (!code || !name || !departmentId) {
       res.status(400).json({ error: "Code, name, and departmentId are required" });
+      return;
+    }
+
+    if (code.length > 50) {
+      res.status(400).json({ error: "Code must be 50 characters or less" });
+      return;
+    }
+
+    if (name.length > 255) {
+      res.status(400).json({ error: "Name must be 255 characters or less" });
+      return;
+    }
+
+    if (description && description.length > 255) {
+      res.status(400).json({ error: "Description must be 255 characters or less" });
+      return;
+    }
+
+    if (isNaN(Number(departmentId))) {
+      res.status(400).json({ error: "Invalid departmentId" });
       return;
     }
 
@@ -130,6 +161,34 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { code, name, description, departmentId } = req.body;
 
+    // Validate ID
+    const subjectId = Number(id);
+    if (isNaN(subjectId)) {
+      res.status(400).json({ error: "Invalid subject ID" });
+      return;
+    }
+
+    // Validation
+    if (code && code.length > 50) {
+      res.status(400).json({ error: "Code must be 50 characters or less" });
+      return;
+    }
+
+    if (name && name.length > 255) {
+      res.status(400).json({ error: "Name must be 255 characters or less" });
+      return;
+    }
+
+    if (description && description.length > 255) {
+      res.status(400).json({ error: "Description must be 255 characters or less" });
+      return;
+    }
+
+    if (departmentId && isNaN(Number(departmentId))) {
+      res.status(400).json({ error: "Invalid departmentId" });
+      return;
+    }
+
     const [updatedSubject] = await db
       .update(subjects)
       .set({ 
@@ -137,9 +196,9 @@ router.put("/:id", async (req, res) => {
         name, 
         description, 
         departmentId,
-        updatedAt: new Date() // Explicitly update timestamp if needed, though schema handles it
+        updatedAt: new Date()
       })
-      .where(eq(subjects.id, Number(id)))
+      .where(eq(subjects.id, subjectId))
       .returning();
 
     if (!updatedSubject) {
@@ -158,9 +217,17 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validate ID
+    const subjectId = Number(id);
+    if (isNaN(subjectId)) {
+      res.status(400).json({ error: "Invalid subject ID" });
+      return;
+    }
+
     const [deletedSubject] = await db
       .delete(subjects)
-      .where(eq(subjects.id, Number(id)))
+      .where(eq(subjects.id, subjectId))
       .returning();
 
     if (!deletedSubject) {
