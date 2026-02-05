@@ -1,25 +1,23 @@
-<div align="center">
-
-  <br />
-  <img src="https://raw.githubusercontent.com/drizzle-team/drizzle-orm/main/assets/drizzle-logo-dark.svg" alt="Drizzle ORM Logo" width="280">
-  <br />
-
-  <h1 align="center">Classroom Backend API</h1>
-
-  <p align="center">
-    The powerful and type-safe API engine for the Classroom Management System.
-    <br />
-    <a href="https://github.com/galilio2023/classroom-backend/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/galilio2023/classroom-backend/issues">Request Feature</a>
-  </p>
-
-  <p align="center">
-    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
-    <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
-    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  </p>
+<div align="center" style="margin-bottom: 30px;">
+    <a href="https://ibrahim-tablawy-portfolio.vercel.app/">
+        <img alt="Author Avatar" 
+             src="https://avatars.githubusercontent.com/u/110768301?s=400&u=d419091187e0ac09e080581ea5b3096623df8beb&v=4" 
+             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+    </a>
+    <h1 align="center">Classroom Backend API</h1>
+    <p align="center">
+      The powerful and type-safe API engine for the Classroom Management System.
+      <br />
+      <a href="https://github.com/galilio2023/classroom-backend/issues">Report Bug</a>
+      ·
+      <a href="https://github.com/galilio2023/classroom-backend/issues">Request Feature</a>
+    </p>
+    <p align="center">
+      <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+      <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
+      <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+      <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+    </p>
 </div>
 
 ---
