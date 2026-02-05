@@ -1,5 +1,5 @@
 import express from "express";
-import { and, eq, ilike, or, sql, getTableColumns, desc } from "drizzle-orm";
+import { and, eq, ilike, or, getTableColumns, desc, count } from "drizzle-orm";
 import { departments, subjects } from "../db/schema";
 import { db } from "../db";
 
@@ -10,17 +10,13 @@ router.get("/", async (req, res) => {
   try {
     const { search, department, page = 1, limit = 10 } = req.query;
     
-    // Validate and sanitize pagination parameters
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
     
-    // Ensure page is at least 1, default to 1 if invalid
     const currentPage = isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber;
-    
-    // Ensure limit is at least 1 and at most 50, default to 10 if invalid
     const limitPerPage = isNaN(limitNumber) || limitNumber < 1 
       ? 10 
-      : Math.min(limitNumber, 50); // Cap limit at 50
+      : Math.min(limitNumber, 50);
 
     const offset = (currentPage - 1) * limitPerPage;
     const filterConditions = [];
@@ -38,14 +34,14 @@ router.get("/", async (req, res) => {
     const whereClause =
       filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
-    // Get total count for pagination metadata
+    // Get total count using Drizzle's built-in count() function
     const countResult = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ value: count() })
       .from(subjects)
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(whereClause);
 
-    const totalCount = countResult[0]?.count ?? 0;
+    const totalCount = Number(countResult[0]?.value) ?? 0;
     const totalPages = Math.ceil(totalCount / limitPerPage);
 
     // Get the actual subjects with pagination
@@ -83,7 +79,6 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ID
     const subjectId = Number(id);
     if (isNaN(subjectId)) {
       res.status(400).json({ error: "Invalid subject ID" });
@@ -117,7 +112,6 @@ router.post("/", async (req, res) => {
   try {
     const { code, name, description, departmentId } = req.body;
     
-    // Validation
     if (!code || !name || !departmentId) {
       res.status(400).json({ error: "Code, name, and departmentId are required" });
       return;
@@ -161,14 +155,12 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { code, name, description, departmentId } = req.body;
 
-    // Validate ID
     const subjectId = Number(id);
     if (isNaN(subjectId)) {
       res.status(400).json({ error: "Invalid subject ID" });
       return;
     }
 
-    // Validation
     if (code && code.length > 50) {
       res.status(400).json({ error: "Code must be 50 characters or less" });
       return;
@@ -218,7 +210,6 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ID
     const subjectId = Number(id);
     if (isNaN(subjectId)) {
       res.status(400).json({ error: "Invalid subject ID" });
