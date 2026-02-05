@@ -64,7 +64,7 @@ Understanding the lifecycle of an API request is crucial. Here is what happens w
 5.  **SQL Execution:** Drizzle ORM translates the query object into raw, parameterized SQL and sends it to the Neon database via the `neon-http` driver.
     ```sql
     -- (Simplified) Example SQL for the count
-    SELECT count(*)::int FROM "subjects" WHERE "name" ILIKE '%math%' OR "code" ILIKE '%math%';
+    SELECT count(*) FROM "subjects" WHERE "name" ILIKE '%math%' OR "code" ILIKE '%math%';
     
     -- (Simplified) Example SQL for the data
     SELECT ... FROM "subjects" WHERE ... LIMIT 10 OFFSET 0;
@@ -77,20 +77,74 @@ Understanding the lifecycle of an API request is crucial. Here is what happens w
 ## 🔌 5. API Endpoints
 
 ### Subjects (`/api/subjects`)
-*   `GET /`: Get a paginated list of subjects.
-    *   **Query Params:** `page`, `limit`, `search` (searches name and code), `department` (searches by department name).
-*   `GET /:id`: Get a single subject by its ID.
-*   `POST /`: Create a new subject.
-*   `PUT /:id`: Update an existing subject.
-*   `DELETE /:id`: Delete a subject.
+
+#### `GET /`
+Get a paginated list of subjects.
+*   **Query Params:**
+    *   `page` (number, optional, default: 1)
+    *   `limit` (number, optional, default: 10)
+    *   `search` (string, optional): Searches `name` and `code` fields.
+    *   `department` (string, optional): Searches by department `name`.
+*   **Success Response (200):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "code": "CS101",
+          "name": "Introduction to Programming",
+          "department": { "id": 1, "name": "Computer Science", ... }
+        }
+      ],
+      "pagination": { "page": 1, "totalPages": 1, "total": 1, ... }
+    }
+    ```
+
+#### `GET /:id`
+Get a single subject by its ID.
+*   **Success Response (200):**
+    ```json
+    {
+      "id": 1,
+      "code": "CS101",
+      "name": "Introduction to Programming",
+      "department": { "id": 1, "name": "Computer Science", ... }
+    }
+    ```
+
+#### `POST /`
+Create a new subject.
+*   **Request Body:**
+    ```json
+    {
+      "code": "PHY201",
+      "name": "Quantum Mechanics",
+      "description": "An introduction to quantum theory.",
+      "departmentId": 3
+    }
+    ```
+*   **Success Response (201):** Returns the newly created subject object.
+
+#### `PUT /:id`
+Update an existing subject.
+*   **Request Body:** (Include only the fields you want to change)
+    ```json
+    {
+      "name": "Advanced Quantum Mechanics",
+      "description": "A deeper dive into quantum theory."
+    }
+    ```
+*   **Success Response (200):** Returns the updated subject object.
+
+#### `DELETE /:id`
+Delete a subject.
+*   **Success Response (200):**
+    ```json
+    { "message": "Subject deleted successfully" }
+    ```
 
 ### Departments (`/api/departments`)
-*   `GET /`: Get a paginated list of departments.
-    *   **Query Params:** `page`, `limit`, `search` (searches name and code).
-*   `GET /:id`: Get a single department by its ID.
-*   `POST /`: Create a new department.
-*   `PUT /:id`: Update an existing department.
-*   `DELETE /:id`: Delete a department.
+*(Follows a similar CRUD structure to Subjects)*
 
 ---
 
