@@ -1,5 +1,5 @@
 import express from "express";
-import { and, eq, ilike, or, sql, getTableColumns, desc } from "drizzle-orm";
+import { and, eq, ilike, or, getTableColumns, desc, count } from "drizzle-orm";
 import { departments } from "../db/schema";
 import { db } from "../db";
 
@@ -10,17 +10,13 @@ router.get("/", async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
     
-    // Validate and sanitize pagination parameters
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
     
-    // Ensure page is at least 1, default to 1 if invalid
     const currentPage = isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber;
-    
-    // Ensure limit is at least 1 and at most 50, default to 10 if invalid
     const limitPerPage = isNaN(limitNumber) || limitNumber < 1 
       ? 10 
-      : Math.min(limitNumber, 50); // Cap limit at 50
+      : Math.min(limitNumber, 50);
 
     const offset = (currentPage - 1) * limitPerPage;
     
@@ -36,13 +32,13 @@ router.get("/", async (req, res) => {
     
     const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
-    // Get total count
+    // Get total count using Drizzle's built-in count() function
     const countResult = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ value: count() })
       .from(departments)
       .where(whereClause);
 
-    const totalCount = countResult[0]?.count ?? 0;
+    const totalCount = Number(countResult[0]?.value) ?? 0;
     const totalPages = Math.ceil(totalCount / limitPerPage);
 
     // Get departments
@@ -76,7 +72,6 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ID
     const deptId = Number(id);
     if (isNaN(deptId)) {
       res.status(400).json({ error: "Invalid department ID" });
@@ -106,7 +101,6 @@ router.post("/", async (req, res) => {
   try {
     const { code, name, description } = req.body;
 
-    // Validation
     if (!code || !name) {
       res.status(400).json({ error: "Code and name are required" });
       return;
@@ -145,14 +139,12 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { code, name, description } = req.body;
 
-    // Validate ID
     const deptId = Number(id);
     if (isNaN(deptId)) {
       res.status(400).json({ error: "Invalid department ID" });
       return;
     }
 
-    // Validation
     if (code && code.length > 50) {
       res.status(400).json({ error: "Code must be 50 characters or less" });
       return;
@@ -196,15 +188,12 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ID
     const deptId = Number(id);
     if (isNaN(deptId)) {
       res.status(400).json({ error: "Invalid department ID" });
       return;
     }
     
-    // Note: This might fail if there are subjects linked to this department
-    // due to the foreign key constraint (onDelete: "restrict" in schema)
     const [deletedDepartment] = await db
       .delete(departments)
       .where(eq(departments.id, deptId))
@@ -218,7 +207,6 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Department deleted successfully" });
   } catch (error: any) {
     console.error(`DELETE /departments/:id error: ${error}`);
-    // Check for foreign key violation
     if (error.code === '23503') {
       res.status(400).json({ error: "Cannot delete department because it has associated subjects" });
       return;

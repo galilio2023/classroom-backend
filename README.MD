@@ -1,4 +1,4 @@
-# Classroom Backend API
+# Classroom Backend: The Engine Room
 
 <div align="center" style="margin: 30px 0;">
     <a href="https://ibrahim-tablawy-portfolio.vercel.app/">
@@ -6,154 +6,127 @@
              src="https://avatars.githubusercontent.com/u/110768301?s=400&u=d419091187e0ac09e080581ea5b3096623df8beb&v=4" 
              style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
     </a>
-    <h3 align="center">Robust Node.js Backend for Classroom Management</h3>
+    <h3 align="center">API Server for Classroom Management</h3>
     <p align="center">
-        Built with <b>Express.js</b>, <b>TypeScript</b>, <b>Drizzle ORM</b>, and <b>Neon Postgres</b>.
+        Built with <b>Node.js</b>, <b>Express</b>, <b>Drizzle ORM</b>, and <b>Neon</b>.
     </p>
 </div>
 
 ---
 
-## 📖 Overview
+## 📖 1. Overview & Core Concepts
 
-This project serves as the backend API for the Classroom Management System. It is designed to be scalable, type-safe, and secure. It provides a RESTful API to manage core educational entities like **Departments** and **Subjects**, leveraging the power of modern tools like Drizzle ORM for database interactions and TypeScript for code reliability.
+This project serves as the backend API for the Classroom Management System. It is a robust RESTful API built with Express.js that handles all business logic, database interactions, and data validation.
 
-## 🛠️ Tech Stack
+The core of this backend is its powerful data layer, built with **Drizzle ORM**, which provides a type-safe and efficient way to interact with our **Neon (Postgres)** database.
+
+---
+
+## 🛠️ 2. Tech Stack
 
 *   **Runtime:** [Node.js](https://nodejs.org/)
-*   **Framework:** [Express.js](https://expressjs.com/) - Fast, unopinionated, minimalist web framework.
-*   **Language:** [TypeScript](https://www.typescriptlang.org/) - Typed superset of JavaScript.
-*   **Database:** [PostgreSQL](https://www.postgresql.org/) (via [Neon](https://neon.tech/)) - Serverless Postgres.
-*   **ORM:** [Drizzle ORM](https://orm.drizzle.team/) - Lightweight and type-safe TypeScript ORM.
-*   **Migration Tool:** [Drizzle Kit](https://orm.drizzle.team/kit-docs/overview) - For managing database schema changes.
+*   **Web Framework:** [Express.js](https://expressjs.com/)
+*   **Database:** [Neon](https://neon.tech/) (Serverless Postgres)
+*   **ORM:** [Drizzle ORM](https://orm.drizzle.team/)
+*   **Language:** [TypeScript](https://www.typescriptlang.org/)
+*   **Environment Variables:** [dotenv](https://github.com/motdotla/dotenv)
+*   **Live Reloading:** [tsx](https://github.com/esbuild-kit/tsx)
 
-## 📂 Project Structure
+---
 
-A clean and organized structure ensures maintainability and scalability.
+## 🗄️ 3. Database Schema
 
-```
-classroom-backend/
-├── src/
-│   ├── db/                 # Database configuration and schema
-│   │   ├── schema/         # Drizzle schema definitions
-│   │   │   ├── app.ts      # Tables: departments, subjects
-│   │   │   └── index.ts    # Schema exports
-│   │   ├── index.ts        # Database client instance (db)
-│   │   └── db.ts           # Connection pool setup
-│   ├── routes/             # API Route Handlers
-│   │   ├── departments.ts  # CRUD for Departments
-│   │   └── subjects.ts     # CRUD for Subjects
-│   └── index.ts            # Application Entry Point (Server setup)
-├── drizzle/                # Generated SQL migration files
-├── .env                    # Environment variables (Git-ignored)
-├── drizzle.config.ts       # Drizzle Kit configuration
-├── package.json            # Dependencies and scripts
-└── tsconfig.json           # TypeScript configuration
-```
+The database schema is defined in `src/db/schema/`. It consists of two primary tables:
 
-## 🚀 Getting Started
+*   **`departments`**: Stores academic departments (e.g., Computer Science, Mathematics).
+*   **`subjects`**: Stores individual subjects (e.g., Intro to Programming). It has a **many-to-one relationship** with `departments` via the `departmentId` foreign key.
 
-Follow these steps to set up the project locally.
+This structure allows each subject to belong to exactly one department.
 
-### 1. Prerequisites
-*   Node.js (v18+ recommended)
-*   npm or yarn
-*   A Neon Postgres database connection string.
+---
 
-### 2. Installation
+## 🔄 4. The Data Flow: How a Request is Processed
 
-Clone the repository and install dependencies:
+Understanding the lifecycle of an API request is crucial. Here is what happens when the frontend requests a list of subjects with a search filter.
 
+**Request:** `GET /api/subjects?search=math&page=1`
+
+1.  **Request Received:** The Express server receives the incoming HTTP request.
+2.  **Routing:** The request is routed to the `GET /` handler in `src/routes/subjects.ts`.
+3.  **Parameter Extraction:** The code destructures the query string to get the `search`, `page`, and `limit` parameters:
+    ```javascript
+    const { search, page = 1, limit = 10 } = req.query;
+    ```
+4.  **Drizzle Query Building:**
+    *   The backend dynamically builds a set of filter conditions. If `search` exists, it creates an `ilike` condition for both the subject `name` and `code`.
+    *   It uses Drizzle's `count()` function to perform an efficient query to get the total number of matching records for pagination.
+    *   It then builds the main query to select the subjects, applying the `where`, `limit`, and `offset` clauses.
+5.  **SQL Execution:** Drizzle ORM translates the query object into raw, parameterized SQL and sends it to the Neon database via the `neon-http` driver.
+    ```sql
+    -- (Simplified) Example SQL for the count
+    SELECT count(*)::int FROM "subjects" WHERE "name" ILIKE '%math%' OR "code" ILIKE '%math%';
+    
+    -- (Simplified) Example SQL for the data
+    SELECT ... FROM "subjects" WHERE ... LIMIT 10 OFFSET 0;
+    ```
+6.  **Response Formatting:** The backend receives the data from the database and formats it into the specific JSON structure the frontend expects, including the `data` array and the `pagination` object.
+7.  **Response Sent:** The server sends the JSON object back to the frontend with a `200 OK` status code.
+
+---
+
+## 🔌 5. API Endpoints
+
+### Subjects (`/api/subjects`)
+*   `GET /`: Get a paginated list of subjects.
+    *   **Query Params:** `page`, `limit`, `search` (searches name and code), `department` (searches by department name).
+*   `GET /:id`: Get a single subject by its ID.
+*   `POST /`: Create a new subject.
+*   `PUT /:id`: Update an existing subject.
+*   `DELETE /:id`: Delete a subject.
+
+### Departments (`/api/departments`)
+*   `GET /`: Get a paginated list of departments.
+    *   **Query Params:** `page`, `limit`, `search` (searches name and code).
+*   `GET /:id`: Get a single department by its ID.
+*   `POST /`: Create a new department.
+*   `PUT /:id`: Update an existing department.
+*   `DELETE /:id`: Delete a department.
+
+---
+
+## 🚀 6. Getting Started
+
+### Prerequisites
+*   Node.js (v18+)
+*   A Neon database account.
+
+### Installation
 ```bash
 git clone <repository-url>
 cd classroom-backend
 npm install
 ```
 
-### 3. Environment Setup
-
-Create a `.env` file in the root directory and add the following variables:
-
+### Environment Setup
+Create a `.env` file in the root directory and add your Neon database connection string:
 ```env
-# Database Connection
-DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
-
-# Server Port (Default: 8000)
-PORT=8000
-
-# Frontend URL for CORS (Required for security)
-FRONTEND_URL="http://localhost:5173"
+# Get this from your Neon dashboard
+DATABASE_URL="postgres://user:password@host/dbname"
 ```
 
-### 4. Database Migration
-
-Generate and apply the database schema:
-
+### Database Migration
+To create the tables in your database, run the migration command:
 ```bash
-# Generate SQL migrations based on schema.ts
-npm run db:generate
-
-# Apply migrations to the database
 npm run db:migrate
 ```
 
-### 5. Running the Server
-
-Start the development server with hot-reloading:
-
+### Running the App
 ```bash
 npm run dev
 ```
+The server will start on `http://localhost:8000`.
 
-The server will start at `http://localhost:8000`.
-
-## 🔌 API Endpoints
-
-All API routes are prefixed with `/api`.
-
-### 🛡️ Validation Rules
-*   **Pagination:** `limit` is capped at **50**. `page` must be >= 1.
-*   **Strings:** `code` max 50 chars, `name` max 255 chars.
-*   **IDs:** Must be valid integers.
-
-### 🏫 Departments (`/api/departments`)
-
-| Method | Endpoint | Description | Query Params |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | List all departments | `search`, `page`, `limit` |
-| `GET` | `/:id` | Get a single department | - |
-| `POST` | `/` | Create a new department | Body: `{ code, name, description }` |
-| `PUT` | `/:id` | Update a department | Body: `{ code, name, description }` |
-| `DELETE` | `/:id` | Delete a department | - |
-
-### 📚 Subjects (`/api/subjects`)
-
-| Method | Endpoint | Description | Query Params |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | List all subjects | `search`, `department`, `page`, `limit` |
-| `GET` | `/:id` | Get a single subject | - |
-| `POST` | `/` | Create a new subject | Body: `{ code, name, description, departmentId }` |
-| `PUT` | `/:id` | Update a subject | Body: `{ code, name, description, departmentId }` |
-| `DELETE` | `/:id` | Delete a subject | - |
-
-## 💾 Database Schema
-
-### `departments` Table
-*   `id`: Integer (Primary Key, Auto-increment)
-*   `code`: String (Unique, Max 50)
-*   `name`: String (Max 255)
-*   `description`: String (Max 255)
-*   `created_at`: Timestamp
-*   `updated_at`: Timestamp
-
-### `subjects` Table
-*   `id`: Integer (Primary Key, Auto-increment)
-*   `code`: String (Unique, Max 50)
-*   `name`: String (Max 255)
-*   `description`: String (Max 255)
-*   `department_id`: Integer (Foreign Key -> departments.id)
-*   `created_at`: Timestamp
-*   `updated_at`: Timestamp
+---
 
 ## 🤝 Contributing
 
