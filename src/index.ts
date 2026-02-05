@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import "dotenv/config";
 import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
@@ -7,6 +8,16 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Middleware
+// Enable CORS for all origins (Good for development)
+// For production, use: app.use(cors({ origin: 'http://your-frontend-domain.com' }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 // Routes
