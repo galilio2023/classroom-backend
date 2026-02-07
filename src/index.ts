@@ -5,6 +5,7 @@ import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
 import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
+import enrollmentsRouter from "./routes/enrollments";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -38,6 +39,7 @@ app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/classes", classesRouter);
+app.use("/api/enrollments", enrollmentsRouter);
 
 // Health Check
 app.get("/", (req, res) => {
