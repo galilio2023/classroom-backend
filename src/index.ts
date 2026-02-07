@@ -1,58 +1,53 @@
-import express from "express";
+import "dotenv/config"; // Must be at the very top
 import cors from "cors";
-import "dotenv/config";
+import express from "express";
+import { toNodeHandler } from "better-auth/node";
+
 import subjectsRouter from "./routes/subjects";
-import departmentsRouter from "./routes/departments";
 import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
+import departmentsRouter from "./routes/departments";
 import enrollmentsRouter from "./routes/enrollments";
-import betterAuthRouter from "./routes/auth";
-import authActionsRouter from "./routes/auth-actions";
+import { auth } from "./lib/auth";
 import { protect } from "./middleware/protect";
+
+// --- Environment Variable Validation ---
+const requiredEnvVars = ["FRONTEND_URL", "BETTER_AUTH_SECRET", "DATABASE_URL"];
+for (const varName of requiredEnvVars) {
+  if (!process.env[varName]) {
+    throw new Error(`FATAL: Environment variable ${varName} is not set.`);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-if (!process.env.FRONTEND_URL) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("FATAL: FRONTEND_URL environment variable is not set.");
-  } else {
-    console.warn("Warning: FRONTEND_URL is not set. CORS may not work correctly with credentials.");
-  }
-}
-
-// --- Global Middleware ---
+// Global Middleware
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  }),
+  })
 );
-// Apply express.json() globally before all routes
-app.use(express.json()); 
+app.use(express.json());
 
 // --- Route Handlers ---
 
-// Better Auth's Internal Handler
-app.all("/api/auth/*splat", betterAuthRouter);
+// Better Auth's self-contained handler for /api/auth/* routes
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
-// Our Custom Auth Actions (BFF)
-app.use("/api", authActionsRouter);
-
-// Protected API Routes
+// Application API routes are now protected
 app.use("/api/subjects", protect, subjectsRouter);
-app.use("/api/departments", protect, departmentsRouter);
 app.use("/api/users", protect, usersRouter);
 app.use("/api/classes", protect, classesRouter);
+app.use("/api/departments", protect, departmentsRouter);
 app.use("/api/enrollments", protect, enrollmentsRouter);
 
-// Health Check
 app.get("/", (req, res) => {
-  res.send("Classroom Backend API is running");
+  res.send("Backend server is running!");
 });
 
-// Start Server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
