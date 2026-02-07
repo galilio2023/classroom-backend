@@ -1,13 +1,14 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
-// import cookieParser from "cookie-parser"; // No longer needed
 import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
+import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
 import enrollmentsRouter from "./routes/enrollments";
-import betterAuthRouter from "./routes/auth"; // better-auth's own handler
-import authActionsRouter from "./routes/auth-actions"; // Our custom BFF routes
+import betterAuthRouter from "./routes/auth";
+import authActionsRouter from "./routes/auth-actions";
+import { protect } from "./middleware/protect";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -20,7 +21,7 @@ if (!process.env.FRONTEND_URL) {
   }
 }
 
-// Middleware
+// --- Global Middleware ---
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -28,24 +29,23 @@ app.use(
     credentials: true,
   }),
 );
-// app.use(cookieParser()); // No longer needed
+// Apply express.json() globally before all routes
+app.use(express.json()); 
 
-// --- Better Auth Handler ---
-// This handles internal better-auth routes (e.g., for social sign-on callbacks)
+// --- Route Handlers ---
+
+// Better Auth's Internal Handler
 app.all("/api/auth/*splat", betterAuthRouter);
 
-// --- Our Custom Auth Actions (BFF) ---
-// This must come after the auth handler and use express.json()
-app.use(express.json());
+// Our Custom Auth Actions (BFF)
 app.use("/api", authActionsRouter);
 
-
-// --- Other API Routes ---
-app.use("/api/subjects", subjectsRouter);
-app.use("/api/departments", departmentsRouter);
-// app.use("/api/users", usersRouter); // This route is now handled by better-auth
-app.use("/api/classes", classesRouter);
-app.use("/api/enrollments", enrollmentsRouter);
+// Protected API Routes
+app.use("/api/subjects", protect, subjectsRouter);
+app.use("/api/departments", protect, departmentsRouter);
+app.use("/api/users", protect, usersRouter);
+app.use("/api/classes", protect, classesRouter);
+app.use("/api/enrollments", protect, enrollmentsRouter);
 
 // Health Check
 app.get("/", (req, res) => {

@@ -1,6 +1,6 @@
 import express from "express";
 import { and, eq, ilike, or, getTableColumns, desc, count } from "drizzle-orm";
-import { departments, subjects } from "../db/schema";
+import { departments, subjects } from "../db/schema/app";
 import { db } from "../db";
 
 const router = express.Router();
@@ -42,7 +42,6 @@ router.get("/", async (req, res) => {
       .where(whereClause);
 
     const totalCount = Number(countResult[0]?.value) ?? 0;
-    const totalPages = Math.ceil(totalCount / limitPerPage);
 
     // Get the actual subjects with pagination
     const subjectList = await db
@@ -57,17 +56,12 @@ router.get("/", async (req, res) => {
       .limit(limitPerPage)
       .offset(offset);
 
-    res.status(200).json({
-      data: subjectList,
-      pagination: {
-        page: currentPage,
-        totalPages,
-        total: totalCount,
-        limit: limitPerPage,
-        hasNextPage: currentPage < totalPages,
-        hasPrevPage: currentPage > 1,
-      },
-    });
+    // Set the X-Total-Count header for Refine's simpleRestProvider
+    res.setHeader("X-Total-Count", totalCount.toString());
+
+    // Return the data as a plain array
+    res.json(subjectList);
+
   } catch (e) {
     console.error(`GET /subjects error: ${e}`);
     res.status(500).json({ error: "Failed to get subjects" });
