@@ -44,226 +44,67 @@ This project leverages a modern, reliable, and scalable backend tech stack:
 
 ---
 
-## 🗄️ 3. Database Schema
+## 🏗️ 3. Architecture & Implementation Plan
 
-The database schema is defined in `src/db/schema/`. It consists of three primary tables:
+We designed the system to be modular and scalable. Here is the architectural roadmap we followed:
 
-*   **`departments`**: Stores academic departments (e.g., Computer Science, Mathematics).
-*   **`subjects`**: Stores individual subjects (e.g., Intro to Programming). It has a **many-to-one relationship** with `departments` via the `departmentId` foreign key.
-*   **`users`**: Stores all system users (Admins, Teachers, Students). It uses a `role` enum to distinguish between user types.
+### Phase 1: Core Academic Structure
+*   **Goal:** Establish the fundamental hierarchy of the school.
+*   **Implementation:**
+    *   Created `departments` table (e.g., "Science", "Arts").
+    *   Created `subjects` table (e.g., "Physics", "History") with a Many-to-One relationship to Departments.
 
-This structure allows for a flexible and scalable data model.
+### Phase 2: User Management (The "One Table" Strategy)
+*   **Goal:** Manage all people (Teachers, Students, Admins) efficiently.
+*   **Decision:** Instead of creating separate tables for each type, we implemented a single `users` table with a `role` enum (`admin`, `teacher`, `student`).
+*   **Benefit:** Simplifies authentication and allows for flexible role management.
+
+### Phase 3: The Classroom Engine
+*   **Goal:** Connect Subjects and Teachers to create actual Classes.
+*   **Implementation:**
+    *   Created `classes` table. It links a **Subject** to a **Teacher** (User).
+    *   Added `schedules` as a JSON column to store flexible class timings (e.g., `[{ day: "Mon", time: "10am" }]`).
+    *   Created `enrollments` table to handle the Many-to-Many relationship between **Students** and **Classes**.
 
 ---
 
-## 🔄 4. The Data Flow: How a Request is Processed
+## 🗄️ 4. Database Schema
 
-Understanding the lifecycle of an API request is crucial. Here is what happens when the frontend requests a list of subjects with a search filter.
+The database schema is defined in `src/db/schema/`. It consists of five primary tables:
 
-<details>
-  <summary><strong>Scenario: `GET /api/subjects?search=math&page=1`</strong></summary>
-  <br />
-  <ol>
-    <li><strong>Request Received:</strong> The Express server receives the incoming HTTP request.</li>
-    <li><strong>Routing:</strong> The request is routed to the <code>GET /</code> handler in <code>src/routes/subjects.ts</code>.</li>
-    <li><strong>Parameter Extraction:</strong> The code destructures the query string to get the <code>search</code>, <code>page</code>, and <code>limit</code> parameters:
-        <pre><code>const { search, page = 1, limit = 10 } = req.query;</code></pre>
-    </li>
-    <li><strong>Drizzle Query Building:</strong>
-        <ul>
-            <li>The backend dynamically builds a set of filter conditions. If <code>search</code> exists, it creates an <code>ilike</code> condition for both the subject <code>name</code> and <code>code</code>.</li>
-            <li>It uses Drizzle's <code>count()</code> function to perform an efficient query to get the total number of matching records for pagination.</li>
-            <li>It then builds the main query to select the subjects, applying the <code>where</code>, <code>limit</code>, and <code>offset</code> clauses.</li>
-        </ul>
-    </li>
-    <li><strong>SQL Execution:</strong> Drizzle ORM translates the query object into raw, parameterized SQL and sends it to the Neon database via the <code>neon-http</code> driver.
-        <pre><code class="lang-sql">-- (Simplified) Example SQL for the count
-SELECT count(*) FROM "subjects" WHERE "name" ILIKE '%math%' OR "code" ILIKE '%math%';
-
--- (Simplified) Example SQL for the data
-SELECT ... FROM "subjects" WHERE ... LIMIT 10 OFFSET 0;</code></pre>
-    </li>
-    <li><strong>Response Formatting:</strong> The backend receives the data from the database and formats it into the specific JSON structure the frontend expects, including the <code>data</code> array and the <code>pagination</code> object.</li>
-    <li><strong>Response Sent:</strong> The server sends the JSON object back to the frontend with a <code>200 OK</code> status code.</li>
-  </ol>
-</details>
+*   **`departments`**: Stores academic departments.
+*   **`subjects`**: Stores individual subjects. Linked to `departments`.
+*   **`users`**: Stores all system users. Distinguished by `role`.
+*   **`classes`**: Represents a specific course offering. Linked to `subjects` and `users` (teacher).
+*   **`enrollments`**: Links `users` (students) to `classes`.
 
 ---
 
 ## 🔌 5. API Endpoints
 
 ### Users (`/api/users`)
+*   `GET /`: List users (Filter by `role`, `search`).
+*   `GET /:id`: Get user details.
+*   `POST /`: Create a new user.
+*   `PUT /:id`: Update a user.
+*   `DELETE /:id`: Delete a user.
 
-<details>
-  <summary><code>GET /</code> - Get a paginated list of users</summary>
-  <br />
-  <ul>
-    <li><strong>Query Params:</strong>
-        <ul>
-            <li><code>page</code> (number, optional, default: 1)</li>
-            <li><code>limit</code> (number, optional, default: 10)</li>
-            <li><code>search</code> (string, optional): Searches <code>name</code> and <code>email</code> fields.</li>
-            <li><code>role</code> (string, optional): Filter by role (<code>admin</code>, <code>teacher</code>, <code>student</code>).</li>
-        </ul>
-    </li>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{
-  "data": [
-    {
-      "id": "uuid-string",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "teacher",
-      "createdAt": "..."
-    }
-  ],
-  "pagination": { "page": 1, "totalPages": 1, "total": 1, ... }
-}</code></pre>
-    </li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>GET /:id</code> - Get a single user by ID</summary>
-  <br />
-  <ul>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{
-  "id": "uuid-string",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "role": "teacher"
-}</code></pre>
-    </li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>POST /</code> - Create a new user</summary>
-  <br />
-  <ul>
-    <li><strong>Request Body:</strong>
-        <pre><code class="lang-json">{
-  "name": "Jane Smith",
-  "email": "jane@example.com",
-  "role": "student"
-}</code></pre>
-    </li>
-    <li><strong>Success Response (201):</strong> Returns the newly created user object.</li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>PUT /:id</code> - Update an existing user</summary>
-  <br />
-  <ul>
-    <li><strong>Request Body:</strong>
-        <pre><code class="lang-json">{
-  "name": "Jane Doe",
-  "role": "teacher"
-}</code></pre>
-    </li>
-    <li><strong>Success Response (200):</strong> Returns the updated user object.</li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>DELETE /:id</code> - Delete a user</summary>
-  <br />
-  <ul>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{ "message": "User deleted successfully" }</code></pre>
-    </li>
-  </ul>
-</details>
+### Classes (`/api/classes`)
+*   `GET /`: List classes (Filter by `subjectId`, `teacherId`, `status`). Returns full relation data (Subject name, Teacher name).
+*   `GET /:id`: Get class details.
+*   `POST /`: Create a new class (Auto-generates `inviteCode`).
+*   `PUT /:id`: Update a class.
+*   `DELETE /:id`: Delete a class.
 
 ### Subjects (`/api/subjects`)
-
-<details>
-  <summary><code>GET /</code> - Get a paginated list of subjects</summary>
-  <br />
-  <ul>
-    <li><strong>Query Params:</strong>
-        <ul>
-            <li><code>page</code> (number, optional, default: 1)</li>
-            <li><code>limit</code> (number, optional, default: 10)</li>
-            <li><code>search</code> (string, optional): Searches <code>name</code> and <code>code</code> fields.</li>
-            <li><code>department</code> (string, optional): Searches by department <code>name</code>.</li>
-        </ul>
-    </li>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{
-  "data": [
-    {
-      "id": 1,
-      "code": "CS101",
-      "name": "Introduction to Programming",
-      "department": { "id": 1, "name": "Computer Science", ... }
-    }
-  ],
-  "pagination": { "page": 1, "totalPages": 1, "total": 1, ... }
-}</code></pre>
-    </li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>GET /:id</code> - Get a single subject by its ID</summary>
-  <br />
-  <ul>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{
-  "id": 1,
-  "code": "CS101",
-  "name": "Introduction to Programming",
-  "department": { "id": 1, "name": "Computer Science", ... }
-}</code></pre>
-    </li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>POST /</code> - Create a new subject</summary>
-  <br />
-  <ul>
-    <li><strong>Request Body:</strong>
-        <pre><code class="lang-json">{
-  "code": "PHY201",
-  "name": "Quantum Mechanics",
-  "description": "An introduction to quantum theory.",
-  "departmentId": 3
-}</code></pre>
-    </li>
-    <li><strong>Success Response (201):</strong> Returns the newly created subject object.</li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>PUT /:id</code> - Update an existing subject</summary>
-  <br />
-  <ul>
-    <li><strong>Request Body:</strong> (Include only the fields you want to change)
-        <pre><code class="lang-json">{
-  "name": "Advanced Quantum Mechanics",
-  "description": "A deeper dive into quantum theory."
-}</code></pre>
-    </li>
-    <li><strong>Success Response (200):</strong> Returns the updated subject object.</li>
-  </ul>
-</details>
-
-<details>
-  <summary><code>DELETE /:id</code> - Delete a subject</summary>
-  <br />
-  <ul>
-    <li><strong>Success Response (200):</strong>
-        <pre><code class="lang-json">{ "message": "Subject deleted successfully" }</code></pre>
-    </li>
-  </ul>
-</details>
+*   `GET /`: List subjects.
+*   `POST /`: Create a subject.
+*   ... (Standard CRUD)
 
 ### Departments (`/api/departments`)
-*(Follows a similar CRUD structure to Subjects)*
+*   `GET /`: List departments.
+*   `POST /`: Create a department.
+*   ... (Standard CRUD)
 
 ---
 
