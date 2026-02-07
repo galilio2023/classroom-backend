@@ -93,36 +93,43 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    // 1. Check if already enrolled
-    const existing = await db
-      .select()
+    // 1. Check if student exists
+    const [student] = await db.select({ id: users.id }).from(users).where(eq(users.id, studentId));
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    // 2. Check if already enrolled
+    const [existingEnrollment] = await db
+      .select({ id: enrollments.id })
       .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.classId, Number(classId)),
-          eq(enrollments.studentId, String(studentId))
-        )
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      res.status(409).json({ error: "Student is already enrolled in this class" });
-      return;
+      .where(and(eq(enrollments.classId, Number(classId)), eq(enrollments.studentId, studentId)));
+    if (existingEnrollment) {
+      return res.status(409).json({ error: "Student is already enrolled in this class" });
     }
 
-    // 2. Check if class exists and has capacity (Optional but good practice)
-    const classCheck = await db
-      .select()
+    // 3. Check class capacity
+    const [classInfo] = await db
+      .select({ capacity: classes.capacity })
       .from(classes)
-      .where(eq(classes.id, Number(classId)))
-      .limit(1);
+      .where(eq(classes.id, Number(classId)));
 
-    if (classCheck.length === 0) {
-      res.status(404).json({ error: "Class not found" });
-      return;
+    if (!classInfo) {
+      return res.status(404).json({ error: "Class not found" });
     }
 
-    // 3. Create enrollment
+    const enrollmentCountResult = await db
+      .select({ value: count() })
+      .from(enrollments)
+      .where(eq(enrollments.classId, Number(classId)));
+    
+    const currentEnrollmentCount = Number(enrollmentCountResult[0]?.value) ?? 0;
+
+    if (currentEnrollmentCount >= classInfo.capacity) {
+      return res.status(409).json({ error: "Class is full" });
+    }
+
+    // 4. Create enrollment
     const [newEnrollment] = await db
       .insert(enrollments)
       .values({
@@ -141,11 +148,14 @@ router.post("/", async (req, res) => {
 // DELETE /enrollments/:id - Remove an enrollment (Unenroll)
 router.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const enrollmentId = parseInt(req.params.id, 10);
+    if (isNaN(enrollmentId)) {
+      return res.status(400).json({ error: "Invalid enrollment ID" });
+    }
     
     const [deleted] = await db
       .delete(enrollments)
-      .where(eq(enrollments.id, Number(id)))
+      .where(eq(enrollments.id, enrollmentId))
       .returning();
 
     if (!deleted) {
