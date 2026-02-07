@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
+import cookieParser from "cookie-parser";
 import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
 import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
 import enrollmentsRouter from "./routes/enrollments";
+import authRouter from "./routes/auth";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -33,8 +35,10 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser()); // Add cookie-parser middleware
 
 // Routes
+app.use("/api/auth", authRouter); // Mount the Better Auth handler
 app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);
