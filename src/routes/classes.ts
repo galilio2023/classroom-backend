@@ -41,7 +41,8 @@ router.get("/", async (req, res) => {
     }
 
     if (status) {
-      filterConditions.push(eq(classes.status, String(status)));
+      // Cast to the enum type if needed, or just pass the string
+      filterConditions.push(eq(classes.status, status as "active" | "inactive" | "archived"));
     }
     
     const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
@@ -198,7 +199,7 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { name, subjectId, teacherId, description, capacity, status, schedules } = req.body;
 
-    const updateData: any = {};
+    const updateData: Partial<typeof classes.$inferInsert> = {};
     if (name) updateData.name = name;
     if (subjectId) updateData.subjectId = Number(subjectId);
     if (teacherId) updateData.teacherId = teacherId;

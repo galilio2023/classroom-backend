@@ -1,4 +1,4 @@
-import { integer, pgTable, timestamp, varchar, text, boolean, json } from "drizzle-orm/pg-core";
+import { integer, pgTable, timestamp, varchar, text, boolean, json, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // --- Shared Timestamps Helper ---
@@ -9,6 +9,10 @@ const timestamps = {
     .$onUpdate(() => new Date())
     .notNull(),
 };
+
+// --- Enums ---
+export const roleEnum = pgEnum("role", ["admin", "teacher", "student"]);
+export const statusEnum = pgEnum("status", ["active", "inactive", "archived"]);
 
 // --- Tables ---
 
@@ -37,7 +41,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  role: text("role", { enum: ["admin", "teacher", "student"] }).notNull().default("student"),
+  role: roleEnum("role").notNull().default("student"),
   ...timestamps,
 });
 
@@ -47,7 +51,7 @@ export const classes = pgTable("classes", {
   description: text("description"),
   inviteCode: varchar("invite_code", { length: 20 }).unique(),
   capacity: integer("capacity").default(50),
-  status: text("status", { enum: ["active", "inactive", "archived"] }).notNull().default("active"),
+  status: statusEnum("status").notNull().default("active"),
   bannerUrl: text("banner_url"),
   bannerCldPubId: text("banner_cld_pub_id"),
   subjectId: integer("subject_id")
@@ -67,11 +71,7 @@ export const enrollments = pgTable("enrollments", {
   classId: integer("class_id")
     .references(() => classes.id, { onDelete: "cascade" })
     .notNull(),
-  enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
+  ...timestamps,
 });
 
 // --- Relations ---
