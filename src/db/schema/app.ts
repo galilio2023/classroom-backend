@@ -1,4 +1,4 @@
-import { integer, pgTable, timestamp, varchar, text, boolean } from "drizzle-orm/pg-core";
+import { integer, pgTable, timestamp, varchar, text, boolean, json, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // --- Shared Timestamps Helper ---
@@ -9,6 +9,10 @@ const timestamps = {
     .$onUpdate(() => new Date())
     .notNull(),
 };
+
+// --- Enums ---
+export const roleEnum = pgEnum("role", ["admin", "teacher", "student"]);
+export const statusEnum = pgEnum("status", ["active", "inactive", "archived"]);
 
 // --- Tables ---
 
@@ -37,7 +41,36 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  role: text("role", { enum: ["admin", "teacher", "student"] }).notNull().default("student"),
+  role: roleEnum("role").notNull().default("student"),
+  ...timestamps,
+});
+
+export const classes = pgTable("classes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  inviteCode: varchar("invite_code", { length: 20 }).unique(),
+  capacity: integer("capacity").default(50),
+  status: statusEnum("status").notNull().default("active"),
+  bannerUrl: text("banner_url"),
+  bannerCldPubId: text("banner_cld_pub_id"),
+  subjectId: integer("subject_id")
+    .references(() => subjects.id, { onDelete: "restrict" })
+    .notNull(),
+  teacherId: text("teacher_id")
+    .references(() => users.id, { onDelete: "set null" }),
+  schedules: json("schedules").$type<{ day: string; startTime: string; endTime: string }[]>().default([]),
+  ...timestamps,
+});
+
+export const enrollments = pgTable("enrollments", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  studentId: text("student_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  classId: integer("class_id")
+    .references(() => classes.id, { onDelete: "cascade" })
+    .notNull(),
   ...timestamps,
 });
 
@@ -47,10 +80,39 @@ export const departmentsRelations = relations(departments, ({ many }) => ({
   subjects: many(subjects),
 }));
 
-export const subjectsRelations = relations(subjects, ({ one }) => ({
+export const subjectsRelations = relations(subjects, ({ one, many }) => ({
   department: one(departments, {
     fields: [subjects.departmentId],
     references: [departments.id],
+  }),
+  classes: many(classes),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  classesTaught: many(classes),
+  enrollments: many(enrollments),
+}));
+
+export const classesRelations = relations(classes, ({ one, many }) => ({
+  subject: one(subjects, {
+    fields: [classes.subjectId],
+    references: [subjects.id],
+  }),
+  teacher: one(users, {
+    fields: [classes.teacherId],
+    references: [users.id],
+  }),
+  enrollments: many(enrollments),
+}));
+
+export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+  student: one(users, {
+    fields: [enrollments.studentId],
+    references: [users.id],
+  }),
+  class: one(classes, {
+    fields: [enrollments.classId],
+    references: [classes.id],
   }),
 }));
 
@@ -64,3 +126,9 @@ export type NewSubject = typeof subjects.$inferInsert;
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export type Class = typeof classes.$inferSelect;
+export type NewClass = typeof classes.$inferInsert;
+
+export type Enrollment = typeof enrollments.$inferSelect;
+export type NewEnrollment = typeof enrollments.$inferInsert;
