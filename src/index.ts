@@ -1,10 +1,9 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
-import cookieParser from "cookie-parser";
+// import cookieParser from "cookie-parser"; // No longer needed
 import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
-import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
 import enrollmentsRouter from "./routes/enrollments";
 import betterAuthRouter from "./routes/auth"; // better-auth's own handler
@@ -29,7 +28,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(cookieParser());
+// app.use(cookieParser()); // No longer needed
 
 // --- Better Auth Handler ---
 // This handles internal better-auth routes (e.g., for social sign-on callbacks)
@@ -44,7 +43,7 @@ app.use("/api", authActionsRouter);
 // --- Other API Routes ---
 app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
-app.use("/api/users", usersRouter);
+// app.use("/api/users", usersRouter); // This route is now handled by better-auth
 app.use("/api/classes", classesRouter);
 app.use("/api/enrollments", enrollmentsRouter);
 

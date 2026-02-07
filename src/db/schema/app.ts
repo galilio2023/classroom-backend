@@ -1,5 +1,6 @@
 import { integer, pgTable, timestamp, varchar, text, boolean, json, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { user } from "./auth"; // Import the single user table
 
 // --- Shared Timestamps Helper ---
 const timestamps = {
@@ -11,7 +12,6 @@ const timestamps = {
 };
 
 // --- Enums ---
-export const roleEnum = pgEnum("role", ["admin", "teacher", "student"]);
 export const statusEnum = pgEnum("status", ["active", "inactive", "archived"]);
 
 // --- Tables ---
@@ -35,16 +35,6 @@ export const subjects = pgTable("subjects", {
   ...timestamps,
 });
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").notNull().default(false),
-  image: text("image"),
-  role: roleEnum("role").notNull().default("student"),
-  ...timestamps,
-});
-
 export const classes = pgTable("classes", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -58,7 +48,7 @@ export const classes = pgTable("classes", {
     .references(() => subjects.id, { onDelete: "restrict" })
     .notNull(),
   teacherId: text("teacher_id")
-    .references(() => users.id, { onDelete: "set null" }),
+    .references(() => user.id, { onDelete: "set null" }), // Updated reference
   schedules: json("schedules").$type<{ day: string; startTime: string; endTime: string }[]>().default([]),
   ...timestamps,
 });
@@ -66,7 +56,7 @@ export const classes = pgTable("classes", {
 export const enrollments = pgTable("enrollments", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   studentId: text("student_id")
-    .references(() => users.id, { onDelete: "cascade" })
+    .references(() => user.id, { onDelete: "cascade" }) // Updated reference
     .notNull(),
   classId: integer("class_id")
     .references(() => classes.id, { onDelete: "cascade" })
@@ -88,27 +78,22 @@ export const subjectsRelations = relations(subjects, ({ one, many }) => ({
   classes: many(classes),
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
-  classesTaught: many(classes),
-  enrollments: many(enrollments),
-}));
-
 export const classesRelations = relations(classes, ({ one, many }) => ({
   subject: one(subjects, {
     fields: [classes.subjectId],
     references: [subjects.id],
   }),
-  teacher: one(users, {
+  teacher: one(user, { // Updated relation
     fields: [classes.teacherId],
-    references: [users.id],
+    references: [user.id],
   }),
   enrollments: many(enrollments),
 }));
 
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
-  student: one(users, {
+  student: one(user, { // Updated relation
     fields: [enrollments.studentId],
-    references: [users.id],
+    references: [user.id],
   }),
   class: one(classes, {
     fields: [enrollments.classId],
@@ -123,9 +108,6 @@ export type NewDepartment = typeof departments.$inferInsert;
 
 export type Subject = typeof subjects.$inferSelect;
 export type NewSubject = typeof subjects.$inferInsert;
-
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
 
 export type Class = typeof classes.$inferSelect;
 export type NewClass = typeof classes.$inferInsert;

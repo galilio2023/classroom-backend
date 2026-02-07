@@ -8,6 +8,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { classes, enrollments } from "./app"; // Import for relations
 
 const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -22,12 +23,11 @@ export const roleEnum = pgEnum("role", ["student", "teacher", "admin"]);
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(), // Added unique constraint
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   role: roleEnum("role").notNull().default("student"),
   imageCldPubId: text("image_cld_pub_id"),
-
   ...timestamps,
 });
 
@@ -37,12 +37,11 @@ export const session = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     token: text("token").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-
     ...timestamps,
   },
   (table) => ({
@@ -57,7 +56,7 @@ export const account = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
@@ -67,7 +66,6 @@ export const account = pgTable(
     scope: text("scope"),
     idToken: text("id_token"),
     password: text("password"),
-
     ...timestamps,
   },
   (table) => ({
@@ -86,7 +84,6 @@ export const verification = pgTable(
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
-
     ...timestamps,
   },
   (table) => ({
@@ -94,19 +91,22 @@ export const verification = pgTable(
   })
 );
 
-export const usersRelations = relations(user, ({ many }) => ({
+// Consolidated user relations
+export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  classesTaught: many(classes),
+  enrollments: many(enrollments),
 }));
 
-export const sessionsRelations = relations(session, ({ one }) => ({
+export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {
     fields: [session.userId],
     references: [user.id],
   }),
 }));
 
-export const accountsRelations = relations(account, ({ one }) => ({
+export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
     references: [user.id],
