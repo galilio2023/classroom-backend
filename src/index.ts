@@ -7,7 +7,8 @@ import departmentsRouter from "./routes/departments";
 import usersRouter from "./routes/users";
 import classesRouter from "./routes/classes";
 import enrollmentsRouter from "./routes/enrollments";
-import authRouter from "./routes/auth";
+import betterAuthRouter from "./routes/auth"; // better-auth's own handler
+import authActionsRouter from "./routes/auth-actions"; // Our custom BFF routes
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -31,13 +32,16 @@ app.use(
 app.use(cookieParser());
 
 // --- Better Auth Handler ---
-// This must be mounted BEFORE express.json() as per the documentation.
-// It handles all requests to /api/auth/*
-app.all("/api/auth/*splat", authRouter);
+// This handles internal better-auth routes (e.g., for social sign-on callbacks)
+app.all("/api/auth/*splat", betterAuthRouter);
 
-// --- Other Routes ---
-app.use(express.json()); // This should come after the auth handler
+// --- Our Custom Auth Actions (BFF) ---
+// This must come after the auth handler and use express.json()
+app.use(express.json());
+app.use("/api", authActionsRouter);
 
+
+// --- Other API Routes ---
 app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);

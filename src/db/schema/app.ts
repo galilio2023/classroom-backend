@@ -1,4 +1,4 @@
-import { integer, pgTable, timestamp, varchar, text, boolean, json, pgEnum, index } from "drizzle-orm/pg-core";
+import { integer, pgTable, timestamp, varchar, text, boolean, json, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // --- Shared Timestamps Helper ---
@@ -74,70 +74,6 @@ export const enrollments = pgTable("enrollments", {
   ...timestamps,
 });
 
-// --- Better Auth Tables ---
-
-export const sessions = pgTable(
-  "session",
-  {
-    id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at").notNull(),
-    token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (table) => [index("session_userId_idx").on(table.userId)],
-);
-
-export const accounts = pgTable(
-  "account",
-  {
-    id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
-    scope: text("scope"),
-    password: text("password"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [index("account_userId_idx").on(table.userId)],
-);
-
-export const verifications = pgTable(
-  "verification",
-  {
-    id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [index("verification_identifier_idx").on(table.identifier)],
-);
-
-
 // --- Relations ---
 
 export const departmentsRelations = relations(departments, ({ many }) => ({
@@ -155,8 +91,6 @@ export const subjectsRelations = relations(subjects, ({ one, many }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   classesTaught: many(classes),
   enrollments: many(enrollments),
-  sessions: many(sessions),
-  accounts: many(accounts),
 }));
 
 export const classesRelations = relations(classes, ({ one, many }) => ({
@@ -182,23 +116,6 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   }),
 }));
 
-// --- Better Auth Relations ---
-
-export const sessionRelations = relations(sessions, ({ one }) => ({
-  user: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const accountRelations = relations(accounts, ({ one }) => ({
-  user: one(users, {
-    fields: [accounts.userId],
-    references: [users.id],
-  }),
-}));
-
-
 // --- TypeScript Types ---
 
 export type Department = typeof departments.$inferSelect;
@@ -215,12 +132,3 @@ export type NewClass = typeof classes.$inferInsert;
 
 export type Enrollment = typeof enrollments.$inferSelect;
 export type NewEnrollment = typeof enrollments.$inferInsert;
-
-export type Session = typeof sessions.$inferSelect;
-export type NewSession = typeof sessions.$inferInsert;
-
-export type Account = typeof accounts.$inferSelect;
-export type NewAccount = typeof accounts.$inferInsert;
-
-export type Verification = typeof verifications.$inferSelect;
-export type NewVerification = typeof verifications.$inferInsert;

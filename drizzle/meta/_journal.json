@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770190647763,
-      "tag": "0000_amusing_siren",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770452079777,
-      "tag": "0001_dizzy_skreet",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770455654049,
-      "tag": "0002_damp_shen",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770456415164,
-      "tag": "0003_workable_kabuki",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1770468864520,
-      "tag": "0004_unique_elektra",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1770470393711,
-      "tag": "0005_lively_rumiko_fujikawa",
+      "when": 1770479071653,
+      "tag": "0000_adorable_kronos",
       "breakpoints": true
     }
   ]
