@@ -13,19 +13,14 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 if (!process.env.FRONTEND_URL) {
-  // In production, it's critical to have a FRONTEND_URL for credentialed CORS requests.
   if (process.env.NODE_ENV === "production") {
     throw new Error("FATAL: FRONTEND_URL environment variable is not set.");
   } else {
-    // In development, a warning might be sufficient.
-    console.warn(
-      "Warning: FRONTEND_URL is not set. CORS may not work correctly with credentials.",
-    );
+    console.warn("Warning: FRONTEND_URL is not set. CORS may not work correctly with credentials.");
   }
 }
+
 // Middleware
-// Enable CORS for all origins (Good for development)
-// For production, use: app.use(cors({ origin: 'http://your-frontend-domain.com' }));
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -33,12 +28,16 @@ app.use(
     credentials: true,
   }),
 );
+app.use(cookieParser());
 
-app.use(express.json());
-app.use(cookieParser()); // Add cookie-parser middleware
+// --- Better Auth Handler ---
+// This must be mounted BEFORE express.json() as per the documentation.
+// It handles all requests to /api/auth/*
+app.all("/api/auth/*splat", authRouter);
 
-// Routes
-app.use("/api/auth", authRouter); // Mount the Better Auth handler
+// --- Other Routes ---
+app.use(express.json()); // This should come after the auth handler
+
 app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);

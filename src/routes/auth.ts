@@ -1,6 +1,6 @@
-import { toExpressHandler } from "better-auth/express";
+import { toNodeHandler } from "better-auth/node";
 import { auth } from "../lib/auth";
 
 // This single line creates all the necessary API endpoints for Better Auth
-// (e.g., /login, /register, /logout, /session) and handles them automatically.
-export default toExpressHandler(auth);
+// and handles them automatically using the correct Node.js handler.
+export default toNodeHandler(auth);
