@@ -1,158 +1,86 @@
-<div align="center" style="margin-bottom: 30px;">
-    <a href="https://ibrahim-tablawy-portfolio.vercel.app/">
-        <img alt="Author Avatar" 
-             src="https://avatars.githubusercontent.com/u/110768301?s=400&u=a6d45b9eeaa2b43332f9159614997f2d5d746c5a&v=4" 
-             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
-    </a>
-    <h1 align="center">Classroom Backend API</h1>
-    <p align="center">
-      The powerful and type-safe API engine for the Classroom Management System.
-      <br />
-      <a href="https://github.com/galilio2023/classroom-backend/issues">Report Bug</a>
-      ·
-      <a href="https://github.com/galilio2023/classroom-backend/issues">Request Feature</a>
-    </p>
-    <p align="center">
-      <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
-      <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
-      <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-      <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-    </p>
-</div>
+# Classroom Backend
 
----
+This is the backend server for the Classroom application, built with Express.js. It provides a RESTful API for managing application data and handles user authentication using the `better-auth` library.
 
-## 📖 1. About The Project
+## Project Setup
 
-This project serves as the backend API for the Classroom Management System. It is a robust RESTful API built with Express.js that handles all business logic, database interactions, and data validation.
+### 1. Installation
 
-The core of this backend is its powerful data layer, built with **Drizzle ORM**, which provides a type-safe and efficient way to interact with our **Neon (Postgres)** database.
-
----
-
-## 🛠️ 2. Tech Stack
-
-This project leverages a modern, reliable, and scalable backend tech stack:
-
-*   **Runtime:** [Node.js](https://nodejs.org/)
-*   **Web Framework:** [Express.js](https://expressjs.com/)
-*   **Database:** [Neon](https://neon.tech/) (Serverless Postgres)
-*   **ORM:** [Drizzle ORM](https://orm.drizzle.team/)
-*   **Language:** [TypeScript](https://www.typescriptlang.org/)
-*   **Environment Variables:** [dotenv](https://github.com/motdotla/dotenv)
-*   **Live Reloading:** [tsx](https://github.com/esbuild-kit/tsx)
-
----
-
-## 🏗️ 3. Architecture & Implementation Plan
-
-We designed the system to be modular and scalable. Here is the architectural roadmap we followed:
-
-### Phase 1: Core Academic Structure
-*   **Goal:** Establish the fundamental hierarchy of the school.
-*   **Implementation:**
-    *   Created `departments` table (e.g., "Science", "Arts").
-    *   Created `subjects` table (e.g., "Physics", "History") with a Many-to-One relationship to Departments.
-
-### Phase 2: User Management (The "One Table" Strategy)
-*   **Goal:** Manage all people (Teachers, Students, Admins) efficiently.
-*   **Decision:** Instead of creating separate tables for each type, we implemented a single `users` table with a `role` enum (`admin`, `teacher`, `student`).
-*   **Benefit:** Simplifies authentication and allows for flexible role management.
-
-### Phase 3: The Classroom Engine
-*   **Goal:** Connect Subjects and Teachers to create actual Classes.
-*   **Implementation:**
-    *   Created `classes` table. It links a **Subject** to a **Teacher** (User).
-    *   Added `schedules` as a JSON column to store flexible class timings (e.g., `[{ day: "Mon", time: "10am" }]`).
-    *   Created `enrollments` table to handle the Many-to-Many relationship between **Students** and **Classes**.
-
----
-
-## 🗄️ 4. Database Schema
-
-The database schema is defined in `src/db/schema/`. It consists of five primary tables:
-
-*   **`departments`**: Stores academic departments.
-*   **`subjects`**: Stores individual subjects. Linked to `departments`.
-*   **`users`**: Stores all system users. Distinguished by `role`.
-*   **`classes`**: Represents a specific course offering. Linked to `subjects` and `users` (teacher).
-*   **`enrollments`**: Links `users` (students) to `classes`.
-
----
-
-## 🔌 5. API Endpoints
-
-### Users (`/api/users`)
-*   `GET /`: List users (Filter by `role`, `search`).
-*   `GET /:id`: Get user details.
-*   `POST /`: Create a new user.
-*   `PUT /:id`: Update a user.
-*   `DELETE /:id`: Delete a user.
-
-### Classes (`/api/classes`)
-*   `GET /`: List classes (Filter by `subjectId`, `teacherId`, `status`). Returns full relation data (Subject name, Teacher name).
-*   `GET /:id`: Get class details.
-*   `POST /`: Create a new class (Auto-generates `inviteCode`).
-*   `PUT /:id`: Update a class.
-*   `DELETE /:id`: Delete a class.
-
-### Subjects (`/api/subjects`)
-*   `GET /`: List subjects.
-*   `POST /`: Create a subject.
-*   ... (Standard CRUD)
-
-### Departments (`/api/departments`)
-*   `GET /`: List departments.
-*   `POST /`: Create a department.
-*   ... (Standard CRUD)
-
----
-
-## 🚀 6. Getting Started
-
-### Prerequisites
-*   Node.js (v18+)
-*   A Neon database account.
-
-### Installation
-```bash
-git clone https://github.com/galilio2023/classroom-backend.git
-cd classroom-backend
+Install the necessary dependencies:
+```sh
 npm install
 ```
 
-### Environment Setup
-Create a `.env` file in the root directory and add your Neon database connection string:
+### 2. Environment Variables
+
+Create a `.env` file in the root of the project. This file is critical for configuring the application.
+
 ```env
-# Get this from your Neon dashboard
-DATABASE_URL="postgres://user:password@host/dbname"
+# The full connection string for your Neon (or other Postgres) database.
+DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
+
+# The URL of the frontend application for CORS configuration.
+FRONTEND_URL="http://localhost:5173"
+
+# A secret string used by better-auth to sign session tokens.
+# Generate a random 32-character string for this.
+BETTER_AUTH_SECRET="your_random_32_character_secret_here"
 ```
 
-### Database Migration
-To create the tables in your database, run the migration command:
-```bash
-npm run db:migrate
-```
+### 3. Database Migrations
 
-### Running the App
-```bash
+This project uses Drizzle ORM to manage the database schema.
+
+- **To generate a new migration file** after making changes to the schema (`src/db/schema/`):
+  ```sh
+  npm run db:generate
+  ```
+
+- **To apply pending migrations** to the database:
+  ```sh
+  npm run db:migrate
+  ```
+
+### 4. Running the Development Server
+
+Start the server in watch mode. It will automatically restart when you make changes.
+```sh
 npm run dev
 ```
-The server will start on `http://localhost:8000`.
+The server will be running at `http://localhost:8000`.
 
 ---
 
-## 🤝 Contributing
+## Core Architecture: `better-auth` Integration
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+The key to this backend is understanding how `better-auth` integrates with Express. The core philosophy is that **`better-auth` is a self-contained authentication engine**. We do not build our own login or register routes; we configure the `better-auth` instance and then expose its pre-built handlers.
 
-## 📄 License
+### Key Files & Concepts
 
-This project is licensed under the MIT License.
+#### 1. `src/lib/auth.ts` - The Auth Engine Configuration
 
-<br />
-<div align="center">
-  <a href="https://ibrahim-tablawy-portfolio.vercel.app/">
-    <img src="./assets/tablawy.png" alt="Tablawy Signature" width="200" />
-  </a>
-</div>
+This is the most important file for authentication. It's where the `better-auth` instance is created and configured.
+
+- **`drizzleAdapter`**: This connects `better-auth` to our database. Crucially, it only needs the authentication-specific schema (`user`, `session`, `account`).
+- **`emailAndPassword`**: This section enables the classic email/password login strategy.
+  - **`requireEmailVerification: false`**: This is a critical setting for development. By default, `better-auth` requires users to verify their email before they can log in. Since we haven't set up an email provider, this setting disables that check, allowing the login to succeed immediately after registration.
+- **`user.additionalFields`**: This is the correct way to add custom fields to the `user` table. `better-auth` manages the schema for these fields internally, so we just need to declare them here.
+
+#### 2. `src/index.ts` - Routing & Middleware
+
+This file orchestrates the entire Express application. The order of middleware and routes is critical.
+
+- **`app.all("/api/auth/*splat", toNodeHandler(auth))`**: This is the magic line. It takes our configured `auth` instance and exposes all of its built-in endpoints under the `/api/auth/` path. This automatically creates routes like `/api/auth/signin/email`, `/api/auth/signup/email`, and `/api/auth/session`. The frontend client will talk to these endpoints directly.
+- **`app.use("/api/...", protect, ...Router)`**: Our application's own data routes (like `/api/subjects` or `/api/users`) are registered separately. They are placed behind our custom `protect` middleware to secure them.
+
+#### 3. `src/middleware/protect.ts` - API Route Protection
+
+This middleware is the gatekeeper for our data.
+
+- **Purpose**: To ensure that no one can access our data endpoints (e.g., `GET /api/subjects`) without being logged in.
+- **How it Works**:
+  1. It runs on every request to a protected route.
+  2. It uses `auth.api.getSession({ headers })` to check for a valid session cookie on the incoming request. This is a server-to-server check within the `better-auth` engine.
+  3. If no session is found, it immediately returns a `401 Unauthorized` error, blocking the request.
+  4. If a session *is* found, it calls `next()` to allow the request to proceed to the actual route handler (e.g., fetching subjects from the database).
+  5. It also attaches the `user` object to the Express `req` object (`req.user = session.user`), making user data available to downstream middleware or routes in a type-safe way.
