@@ -9,7 +9,6 @@
     "dev": "tsx watch src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:migrate:force": "drizzle-kit migrate --mode=sql",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
