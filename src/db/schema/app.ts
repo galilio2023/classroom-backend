@@ -1,4 +1,4 @@
-import { integer, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, timestamp, varchar, text, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // --- Shared Timestamps Helper ---
@@ -31,6 +31,16 @@ export const subjects = pgTable("subjects", {
   ...timestamps,
 });
 
+export const users = pgTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  role: text("role", { enum: ["admin", "teacher", "student"] }).notNull().default("student"),
+  ...timestamps,
+});
+
 // --- Relations ---
 
 export const departmentsRelations = relations(departments, ({ many }) => ({
@@ -51,3 +61,6 @@ export type NewDepartment = typeof departments.$inferInsert;
 
 export type Subject = typeof subjects.$inferSelect;
 export type NewSubject = typeof subjects.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
