@@ -46,12 +46,13 @@ This project leverages a modern, reliable, and scalable backend tech stack:
 
 ## 🗄️ 3. Database Schema
 
-The database schema is defined in `src/db/schema/`. It consists of two primary tables:
+The database schema is defined in `src/db/schema/`. It consists of three primary tables:
 
 *   **`departments`**: Stores academic departments (e.g., Computer Science, Mathematics).
 *   **`subjects`**: Stores individual subjects (e.g., Intro to Programming). It has a **many-to-one relationship** with `departments` via the `departmentId` foreign key.
+*   **`users`**: Stores all system users (Admins, Teachers, Students). It uses a `role` enum to distinguish between user types.
 
-This structure allows each subject to belong to exactly one department.
+This structure allows for a flexible and scalable data model.
 
 ---
 
@@ -90,6 +91,91 @@ SELECT ... FROM "subjects" WHERE ... LIMIT 10 OFFSET 0;</code></pre>
 ---
 
 ## 🔌 5. API Endpoints
+
+### Users (`/api/users`)
+
+<details>
+  <summary><code>GET /</code> - Get a paginated list of users</summary>
+  <br />
+  <ul>
+    <li><strong>Query Params:</strong>
+        <ul>
+            <li><code>page</code> (number, optional, default: 1)</li>
+            <li><code>limit</code> (number, optional, default: 10)</li>
+            <li><code>search</code> (string, optional): Searches <code>name</code> and <code>email</code> fields.</li>
+            <li><code>role</code> (string, optional): Filter by role (<code>admin</code>, <code>teacher</code>, <code>student</code>).</li>
+        </ul>
+    </li>
+    <li><strong>Success Response (200):</strong>
+        <pre><code class="lang-json">{
+  "data": [
+    {
+      "id": "uuid-string",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "teacher",
+      "createdAt": "..."
+    }
+  ],
+  "pagination": { "page": 1, "totalPages": 1, "total": 1, ... }
+}</code></pre>
+    </li>
+  </ul>
+</details>
+
+<details>
+  <summary><code>GET /:id</code> - Get a single user by ID</summary>
+  <br />
+  <ul>
+    <li><strong>Success Response (200):</strong>
+        <pre><code class="lang-json">{
+  "id": "uuid-string",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "teacher"
+}</code></pre>
+    </li>
+  </ul>
+</details>
+
+<details>
+  <summary><code>POST /</code> - Create a new user</summary>
+  <br />
+  <ul>
+    <li><strong>Request Body:</strong>
+        <pre><code class="lang-json">{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "role": "student"
+}</code></pre>
+    </li>
+    <li><strong>Success Response (201):</strong> Returns the newly created user object.</li>
+  </ul>
+</details>
+
+<details>
+  <summary><code>PUT /:id</code> - Update an existing user</summary>
+  <br />
+  <ul>
+    <li><strong>Request Body:</strong>
+        <pre><code class="lang-json">{
+  "name": "Jane Doe",
+  "role": "teacher"
+}</code></pre>
+    </li>
+    <li><strong>Success Response (200):</strong> Returns the updated user object.</li>
+  </ul>
+</details>
+
+<details>
+  <summary><code>DELETE /:id</code> - Delete a user</summary>
+  <br />
+  <ul>
+    <li><strong>Success Response (200):</strong>
+        <pre><code class="lang-json">{ "message": "User deleted successfully" }</code></pre>
+    </li>
+  </ul>
+</details>
 
 ### Subjects (`/api/subjects`)
 

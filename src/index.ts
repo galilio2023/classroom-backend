@@ -3,6 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 import subjectsRouter from "./routes/subjects";
 import departmentsRouter from "./routes/departments";
+import usersRouter from "./routes/users";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -34,6 +35,7 @@ app.use(express.json());
 // Routes
 app.use("/api/subjects", subjectsRouter);
 app.use("/api/departments", departmentsRouter);
+app.use("/api/users", usersRouter);
 
 // Health Check
 app.get("/", (req, res) => {
