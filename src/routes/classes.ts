@@ -1,6 +1,7 @@
 import express from "express";
-import { and, eq, ilike, or, desc, count, sql } from "drizzle-orm";
-import { classes, subjects, users, departments } from "../db/schema";
+import { and, eq, ilike, or, desc, count } from "drizzle-orm";
+import { classes, subjects, departments } from "../db/schema/app";
+import { user } from "../db/schema/auth"; // Import the correct user table
 import { db } from "../db";
 import { nanoid } from "nanoid";
 
@@ -41,7 +42,6 @@ router.get("/", async (req, res) => {
     }
 
     if (status) {
-      // Cast to the enum type if needed, or just pass the string
       filterConditions.push(eq(classes.status, status as "active" | "inactive" | "archived"));
     }
     
@@ -74,9 +74,9 @@ router.get("/", async (req, res) => {
           code: subjects.code,
         },
         teacher: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
+          id: user.id,
+          name: user.name,
+          email: user.email,
         },
         department: {
             id: departments.id,
@@ -85,7 +85,7 @@ router.get("/", async (req, res) => {
       })
       .from(classes)
       .leftJoin(subjects, eq(classes.subjectId, subjects.id))
-      .leftJoin(users, eq(classes.teacherId, users.id))
+      .leftJoin(user, eq(classes.teacherId, user.id)) // Use correct user table
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(whereClause)
       .orderBy(desc(classes.createdAt))
@@ -131,9 +131,9 @@ router.get("/:id", async (req, res) => {
           code: subjects.code,
         },
         teacher: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
+          id: user.id,
+          name: user.name,
+          email: user.email,
         },
         department: {
             id: departments.id,
@@ -142,7 +142,7 @@ router.get("/:id", async (req, res) => {
       })
       .from(classes)
       .leftJoin(subjects, eq(classes.subjectId, subjects.id))
-      .leftJoin(users, eq(classes.teacherId, users.id))
+      .leftJoin(user, eq(classes.teacherId, user.id)) // Use correct user table
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(eq(classes.id, Number(id)))
       .limit(1);

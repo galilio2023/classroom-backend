@@ -1,6 +1,7 @@
 import express from "express";
 import { and, eq, desc, count } from "drizzle-orm";
-import { enrollments, users, classes } from "../db/schema";
+import { enrollments, classes } from "../db/schema/app";
+import { user } from "../db/schema/auth"; // Import the correct user table
 import { db } from "../db";
 
 const router = express.Router();
@@ -47,10 +48,10 @@ router.get("/", async (req, res) => {
         id: enrollments.id,
         createdAt: enrollments.createdAt,
         student: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          image: users.image,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
         },
         class: {
           id: classes.id,
@@ -59,7 +60,7 @@ router.get("/", async (req, res) => {
         }
       })
       .from(enrollments)
-      .leftJoin(users, eq(enrollments.studentId, users.id))
+      .leftJoin(user, eq(enrollments.studentId, user.id)) // Use correct user table
       .leftJoin(classes, eq(enrollments.classId, classes.id))
       .where(whereClause)
       .orderBy(desc(enrollments.createdAt))
@@ -94,7 +95,7 @@ router.post("/", async (req, res) => {
     }
 
     // 1. Check if student exists
-    const [student] = await db.select({ id: users.id }).from(users).where(eq(users.id, studentId));
+    const [student] = await db.select({ id: user.id }).from(user).where(eq(user.id, studentId)); // Use correct user table
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
