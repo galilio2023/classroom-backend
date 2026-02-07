@@ -1,5 +1,5 @@
 import express from "express";
-import { and, eq, ilike, or, sql, getTableColumns, desc, count } from "drizzle-orm";
+import { and, eq, ilike, or, desc, count, ne } from "drizzle-orm";
 import { users } from "../db/schema";
 import { db } from "../db";
 
@@ -149,14 +149,39 @@ router.put("/:id", async (req, res) => {
       return;
     }
 
+    // Check for email conflict if email is being updated
+    if (email) {
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.email, email),
+            ne(users.id, id) // Check if email exists for a DIFFERENT user
+          )
+        )
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        res.status(409).json({ error: "Email already exists" });
+        return;
+      }
+    }
+
+    // Build update object dynamically to handle partial updates
+    const updateData: Partial<typeof users.$inferInsert> = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (role) updateData.role = role;
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "No fields to update" });
+      return;
+    }
+
     const [updatedUser] = await db
       .update(users)
-      .set({ 
-        name, 
-        email, 
-        role,
-        updatedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
 
