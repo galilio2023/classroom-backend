@@ -1,6 +1,6 @@
 import express from "express";
 import { and, eq, ilike, or, getTableColumns, desc, count } from "drizzle-orm";
-import { departments } from "../db/schema";
+import { departments } from "../db/schema/app";
 import { db } from "../db";
 
 const router = express.Router();
@@ -39,7 +39,6 @@ router.get("/", async (req, res) => {
       .where(whereClause);
 
     const totalCount = Number(countResult[0]?.value) ?? 0;
-    const totalPages = Math.ceil(totalCount / limitPerPage);
 
     // Get departments
     const departmentList = await db
@@ -50,17 +49,9 @@ router.get("/", async (req, res) => {
       .limit(limitPerPage)
       .offset(offset);
 
-    res.json({
-      data: departmentList,
-      pagination: {
-        page: currentPage,
-        totalPages,
-        total: totalCount,
-        limit: limitPerPage,
-        hasNextPage: currentPage < totalPages,
-        hasPrevPage: currentPage > 1,
-      },
-    });
+    res.setHeader("X-Total-Count", totalCount.toString());
+    res.json(departmentList);
+
   } catch (error) {
     console.error(`GET /departments error: ${error}`);
     res.status(500).json({ error: "Failed to fetch departments" });

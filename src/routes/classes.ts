@@ -1,7 +1,7 @@
 import express from "express";
 import { and, eq, ilike, or, desc, count } from "drizzle-orm";
 import { classes, subjects, departments } from "../db/schema/app";
-import { user } from "../db/schema/auth"; // Import the correct user table
+import { user } from "../db/schema/auth";
 import { db } from "../db";
 import { nanoid } from "nanoid";
 
@@ -54,7 +54,6 @@ router.get("/", async (req, res) => {
       .where(whereClause);
 
     const totalCount = Number(countResult[0]?.value) ?? 0;
-    const totalPages = Math.ceil(totalCount / limitPerPage);
 
     // Get classes with relations
     const classesList = await db
@@ -85,24 +84,16 @@ router.get("/", async (req, res) => {
       })
       .from(classes)
       .leftJoin(subjects, eq(classes.subjectId, subjects.id))
-      .leftJoin(user, eq(classes.teacherId, user.id)) // Use correct user table
+      .leftJoin(user, eq(classes.teacherId, user.id))
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(whereClause)
       .orderBy(desc(classes.createdAt))
       .limit(limitPerPage)
       .offset(offset);
 
-    res.json({
-      data: classesList,
-      pagination: {
-        page: currentPage,
-        totalPages,
-        total: totalCount,
-        limit: limitPerPage,
-        hasNextPage: currentPage < totalPages,
-        hasPrevPage: currentPage > 1,
-      },
-    });
+    res.setHeader("X-Total-Count", totalCount.toString());
+    res.json(classesList);
+
   } catch (error) {
     console.error(`GET /classes error: ${error}`);
     res.status(500).json({ error: "Failed to fetch classes" });
@@ -142,7 +133,7 @@ router.get("/:id", async (req, res) => {
       })
       .from(classes)
       .leftJoin(subjects, eq(classes.subjectId, subjects.id))
-      .leftJoin(user, eq(classes.teacherId, user.id)) // Use correct user table
+      .leftJoin(user, eq(classes.teacherId, user.id))
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(eq(classes.id, Number(id)))
       .limit(1);
