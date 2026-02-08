@@ -28,14 +28,17 @@ app.use(
     origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
+    // Expose the X-Total-Count header so the frontend can read it for pagination
+    exposedHeaders: ["X-Total-Count"],
+  }),
 );
 app.use(express.json());
 
 // --- Route Handlers ---
 
 // Better Auth's self-contained handler for /api/auth/* routes
-app.all("/api/auth/*splat", toNodeHandler(auth));
+// Use app.use() instead of app.all() for Express 5 compatibility
+app.use("/api/auth", toNodeHandler(auth));
 
 // Application API routes are now protected
 app.use("/api/subjects", protect, subjectsRouter);
