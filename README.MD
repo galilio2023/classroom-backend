@@ -28,9 +28,34 @@ This project serves as the backend API for the Classroom Management System. It i
 
 The core of this backend is its powerful data layer, built with **Drizzle ORM**, which provides a type-safe and efficient way to interact with our **Neon (Postgres)** database.
 
+## 📊 2. Project Status (As of Now)
+
+### ✅ Implemented Features
+
+*   **Authentication**: Full user session management via `better-auth`.
+*   **API Security**: All data routes are protected by a `protect` middleware that verifies the user's session.
+*   **Departments API**: Full CRUD endpoints.
+*   **Subjects API**: Full CRUD endpoints with relational queries to departments.
+*   **Users API**: Endpoint to list users, with filtering by role.
+*   **Classes API**: 
+    *   `GET /`: Lists all classes with relational data (subject, teacher) and supports filtering.
+    *   `GET /:id`: Fetches a single class.
+    *   `POST /`: Creates a new class.
+    *   `GET /:id/users`: A custom nested endpoint to list all students enrolled in a specific class.
+*   **Enrollments API**:
+    *   `GET /`: Lists enrollments, primarily used for filtering by `classId`.
+    *   `POST /join`: Allows a student to join a class using an invite code.
+*   **Data Contract**: All list endpoints correctly return data in the `{ data: [...], pagination: {...} }` format expected by the frontend's custom data provider.
+
+### 🚧 Not Yet Implemented
+
+*   **Class Updates & Deletes**: The `PUT` and `DELETE` endpoints for the `classes` resource are not yet implemented.
+*   **Enrollment Creation & Deletion**: The standard `POST` and `DELETE` endpoints for the `enrollments` resource are not yet implemented (only `POST /join` exists).
+*   **Advanced Validation**: More robust business logic validation is needed (e.g., preventing a student from enrolling in a full class).
+
 ---
 
-## 🛠️ 2. Tech Stack
+## 🛠️ 3. Tech Stack
 
 This project leverages a modern, reliable, and scalable backend tech stack:
 
@@ -45,7 +70,7 @@ This project leverages a modern, reliable, and scalable backend tech stack:
 
 ---
 
-## 🏗️ 3. Architecture & Implementation Plan
+## 🏗️ 4. Architecture & Implementation Plan
 
 We designed the system to be modular and scalable. Here is the architectural roadmap we followed:
 
@@ -69,7 +94,7 @@ We designed the system to be modular and scalable. Here is the architectural roa
 
 ---
 
-## 🗄️ 4. Database Schema
+## 🗄️ 5. Database Schema
 
 The database schema is defined in `src/db/schema/`. It is split into two logical parts:
 *   **`app.ts`**: Contains the core application tables (`departments`, `subjects`, `classes`, `enrollments`).
@@ -77,7 +102,7 @@ The database schema is defined in `src/db/schema/`. It is split into two logical
 
 ---
 
-## 🔌 5. API Endpoints
+## 🔌 6. API Endpoints
 
 All data endpoints under `/api/` are protected and require authentication.
 
@@ -102,7 +127,7 @@ All data endpoints under `/api/` are protected and require authentication.
 
 ---
 
-## 🚀 6. Getting Started
+## 🚀 7. Getting Started
 
 ### Prerequisites
 *   Node.js (v18+)
@@ -142,7 +167,7 @@ The server will start on `http://localhost:8000`.
 
 ---
 
-## 🔐 7. Authentication Deep Dive (`better-auth` Integration)
+## 🔐 8. Authentication Deep Dive (`better-auth` Integration)
 
 The key to this backend is understanding how `better-auth` integrates with Express. The core philosophy is that **`better-auth` is a self-contained authentication engine**. We do not build our own login or register routes; we configure the `better-auth` instance and then expose its pre-built handlers.
 

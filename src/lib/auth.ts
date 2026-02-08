@@ -1,22 +1,24 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
-import { db } from "../db/index.js";
-import * as schema from "../db/schema/auth.js";
+import { db } from "../db";
+// Import the tables individually instead of as a wildcard
+import { user, session, account, verification } from "../db/schema/auth.js";
+
+// Explicitly create the schema object with only the required tables
+const schema = { user, session, account, verification };
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   trustedOrigins: [process.env.FRONTEND_URL!],
   database: drizzleAdapter(db, {
     provider: "pg",
+    // Pass the clean schema object to the adapter
     schema,
   }),
   emailAndPassword: {
     enabled: true,
-    // This is the critical fix.
-    // This tells better-auth to not require or attempt email verification
-    // during the sign-up process, which prevents the crash.
-    requireEmailVerification: false, 
+    requireEmailVerification: false,
   },
   user: {
     additionalFields: {

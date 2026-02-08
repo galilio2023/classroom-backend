@@ -1,28 +1,22 @@
 import express from "express";
-import { and, eq, ilike, or, getTableColumns, desc, count } from "drizzle-orm";
-import { departments } from "../db/schema/app";
-import { db } from "../db";
+import { and, eq, ilike, or, desc, count, SQL } from "drizzle-orm";
+import { departments } from "../db/schema/app.js";
+import { db } from "../db/index.js";
 
 const router = express.Router();
 
 // GET /departments - List all departments with optional search and pagination
 router.get("/", async (req, res) => {
   try {
-    const { search, page = 1, limit = 10 } = req.query;
+    const { search, page = '1', limit = '10' } = req.query;
     
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
+    const offset = (pageNumber - 1) * limitNumber;
     
-    const currentPage = isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber;
-    const limitPerPage = isNaN(limitNumber) || limitNumber < 1 
-      ? 10 
-      : Math.min(limitNumber, 50);
-
-    const offset = (currentPage - 1) * limitPerPage;
-    
-    const filterConditions = [];
+    const whereConditions: SQL[] = [];
     if (search) {
-      filterConditions.push(
+      whereConditions.push(
         or(
           ilike(departments.name, `%${search}%`),
           ilike(departments.code, `%${search}%`)
@@ -30,27 +24,30 @@ router.get("/", async (req, res) => {
       );
     }
     
-    const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-    // Get total count using Drizzle's built-in count() function
-    const countResult = await db
-      .select({ value: count() })
-      .from(departments)
-      .where(whereClause);
-
+    const countResult = await db.select({ value: count() }).from(departments).where(whereClause);
     const totalCount = Number(countResult[0]?.value) ?? 0;
+    const totalPages = Math.ceil(totalCount / limitNumber);
 
-    // Get departments
     const departmentList = await db
       .select()
       .from(departments)
       .where(whereClause)
       .orderBy(desc(departments.createdAt))
-      .limit(limitPerPage)
+      .limit(limitNumber)
       .offset(offset);
 
-    res.setHeader("X-Total-Count", totalCount.toString());
-    res.json(departmentList);
+    // Return data in the format expected by the custom dataProvider
+    res.json({
+      data: departmentList,
+      pagination: {
+        total: totalCount,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: totalPages,
+      },
+    });
 
   } catch (error) {
     console.error(`GET /departments error: ${error}`);
@@ -62,25 +59,11 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const deptId = Number(id);
-    if (isNaN(deptId)) {
-      res.status(400).json({ error: "Invalid department ID" });
-      return;
+    const [department] = await db.select().from(departments).where(eq(departments.id, Number(id)));
+    if (!department) {
+      return res.status(404).json({ error: "Department not found" });
     }
-
-    const department = await db
-      .select()
-      .from(departments)
-      .where(eq(departments.id, deptId))
-      .limit(1);
-
-    if (department.length === 0) {
-      res.status(404).json({ error: "Department not found" });
-      return;
-    }
-
-    res.json(department[0]);
+    res.json({ data: department });
   } catch (error) {
     console.error(`GET /departments/:id error: ${error}`);
     res.status(500).json({ error: "Failed to fetch department" });
@@ -91,33 +74,8 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { code, name, description } = req.body;
-
-    if (!code || !name) {
-      res.status(400).json({ error: "Code and name are required" });
-      return;
-    }
-
-    if (code.length > 50) {
-      res.status(400).json({ error: "Code must be 50 characters or less" });
-      return;
-    }
-
-    if (name.length > 255) {
-      res.status(400).json({ error: "Name must be 255 characters or less" });
-      return;
-    }
-
-    if (description && description.length > 255) {
-      res.status(400).json({ error: "Description must be 255 characters or less" });
-      return;
-    }
-
-    const [newDepartment] = await db
-      .insert(departments)
-      .values({ code, name, description })
-      .returning();
-
-    res.status(201).json(newDepartment);
+    const [newDepartment] = await db.insert(departments).values({ code, name, description }).returning();
+    res.status(201).json({ data: newDepartment });
   } catch (error) {
     console.error(`POST /departments error: ${error}`);
     res.status(500).json({ error: "Failed to create department" });
@@ -129,45 +87,11 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { code, name, description } = req.body;
-
-    const deptId = Number(id);
-    if (isNaN(deptId)) {
-      res.status(400).json({ error: "Invalid department ID" });
-      return;
-    }
-
-    if (code && code.length > 50) {
-      res.status(400).json({ error: "Code must be 50 characters or less" });
-      return;
-    }
-
-    if (name && name.length > 255) {
-      res.status(400).json({ error: "Name must be 255 characters or less" });
-      return;
-    }
-
-    if (description && description.length > 255) {
-      res.status(400).json({ error: "Description must be 255 characters or less" });
-      return;
-    }
-
-    const [updatedDepartment] = await db
-      .update(departments)
-      .set({ 
-        code, 
-        name, 
-        description,
-        updatedAt: new Date()
-      })
-      .where(eq(departments.id, deptId))
-      .returning();
-
+    const [updatedDepartment] = await db.update(departments).set({ code, name, description, updatedAt: new Date() }).where(eq(departments.id, Number(id))).returning();
     if (!updatedDepartment) {
-      res.status(404).json({ error: "Department not found" });
-      return;
+      return res.status(404).json({ error: "Department not found" });
     }
-
-    res.json(updatedDepartment);
+    res.json({ data: updatedDepartment });
   } catch (error) {
     console.error(`PUT /departments/:id error: ${error}`);
     res.status(500).json({ error: "Failed to update department" });
@@ -178,29 +102,15 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const deptId = Number(id);
-    if (isNaN(deptId)) {
-      res.status(400).json({ error: "Invalid department ID" });
-      return;
-    }
-    
-    const [deletedDepartment] = await db
-      .delete(departments)
-      .where(eq(departments.id, deptId))
-      .returning();
-
+    const [deletedDepartment] = await db.delete(departments).where(eq(departments.id, Number(id))).returning();
     if (!deletedDepartment) {
-      res.status(404).json({ error: "Department not found" });
-      return;
+      return res.status(404).json({ error: "Department not found" });
     }
-
-    res.json({ message: "Department deleted successfully" });
+    res.json({ data: deletedDepartment });
   } catch (error: any) {
     console.error(`DELETE /departments/:id error: ${error}`);
     if (error.code === '23503') {
-      res.status(400).json({ error: "Cannot delete department because it has associated subjects" });
-      return;
+      return res.status(400).json({ error: "Cannot delete department because it has associated subjects" });
     }
     res.status(500).json({ error: "Failed to delete department" });
   }
